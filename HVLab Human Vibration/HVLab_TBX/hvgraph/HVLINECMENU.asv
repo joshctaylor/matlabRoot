@@ -1,0 +1,371 @@
+% function to generate a uicontextmenu for a line object
+% 
+% function [] = HVLINECMENU (switchcode,line_handle,figure_handle,defineflag);
+% set defineflag=1 to generate the context menu for a line
+% written TPG 16/6/2004
+
+% Modified TPG 23/6/2004 to add 'none' as a linestyle option
+% Modified TPG 7/7/2
+
+
+function [] = HVLINECMENU (switchcode,line_handle,figure_handle,defineflag);
+
+% generate the context menu 
+if exist('defineflag');
+    
+    cmenu = uicontextmenu;
+    set(cmenu,'parent',figure_handle);
+    
+    set(line_handle,'uicontextmenu',cmenu);
+    
+    linedata=get(line_handle,'userdata');
+    
+    uimenu(cmenu, 'Label', ['Title: ',linedata.title], 'Callback', 'HVLINECMENU(37,gco,gcf)','Tag','linetitle');
+    uimenu(cmenu, 'Label',['x units: ',linedata.xlabel], 'Callback', 'HVLINECMENU(38,gco,gcf)','tag','lineunits');
+    uimenu(cmenu, 'Label',['y units: ',linedata.ylabel1], 'Callback', 'HVLINECMENU(38,gco,gcf)','tag','lineunits');  
+    
+    % get line statistics
+    xvals=get(line_handle,'xdata');
+    yvals=get(line_handle,'ydata');
+    
+    switch linedata.dtype
+        case 1
+            uimenu(cmenu, 'Label','Time history', 'Enable','Off');
+            fs=num2str(1./(xvals(2)-xvals(1)));
+            uimenu(cmenu, 'Label',[num2str(length(xvals)),' samples'], 'Enable','Off');
+            uimenu(cmenu, 'Label',[fs,' samples per second'], 'Enable','Off');
+            uimenu(cmenu, 'Label',['Mean: ',num2str(mean(yvals)),'; r.m.s: ',num2str(std(yvals))], 'Enable','Off');  
+    uimenu(cmenu, 'Label',['Min: ',num2str(min(yvals)),' max: ',num2str(max(yvals))], 'Enable','Off'); 
+        case 2
+            uimenu(cmenu, 'Label','Complex data', 'Enable','Off');
+            fs=num2str(1./(xvals(2)-xvals(1)));
+            uimenu(cmenu, 'Label',[num2str(length(xvals)),' samples'], 'Enable','Off');
+            uimenu(cmenu, 'Label',[fs,' samples per second'], 'Enable','Off');           
+        case 3
+            uimenu(cmenu, 'Label','Modulus/phase data', 'Enable','Off');
+            fs=num2str(1./(xvals(2)-xvals(1)));
+            uimenu(cmenu, 'Label',[num2str(length(xvals)),' samples'], 'Enable','Off');
+            uimenu(cmenu, 'Label',[fs,' samples per second'], 'Enable','Off');         
+        case 4
+            uimenu(cmenu, 'Label','x/y data', 'Enable','Off');
+            fs=num2str(1./(xvals(2)-xvals(1)));
+            uimenu(cmenu, 'Label',[num2str(length(xvals)),' samples'], 'Enable','Off');
+            uimenu(cmenu, 'Label',['Variable sampling rate'], 'Enable','Off');    
+    end
+    
+    colmenu=uimenu(cmenu, 'Label', 'Set colour','separator','on');
+    uimenu(colmenu, 'Label', 'Black', 'Callback', 'HVLINECMENU(1,gco,gcf)');
+    uimenu(colmenu, 'Label', 'White', 'Callback', 'HVLINECMENU(2,gco,gcf)');
+    uimenu(colmenu, 'Label', 'Red', 'Callback', 'HVLINECMENU(3,gco,gcf)');
+    uimenu(colmenu, 'Label', 'Green', 'Callback', 'HVLINECMENU(4,gco,gcf)');
+    uimenu(colmenu, 'Label', 'Blue', 'Callback', 'HVLINECMENU(5,gco,gcf)');
+    uimenu(colmenu, 'Label', 'Yellow', 'Callback', 'HVLINECMENU(6,gco,gcf)');
+    uimenu(colmenu, 'Label', 'Cyan', 'Callback', 'HVLINECMENU(7,gco,gcf)');
+    uimenu(colmenu, 'Label', 'Magenta', 'Callback', 'HVLINECMENU(8,gco,gcf)');
+    
+  %   linemenu=uimenu(cmenu, 'Label', 'Set line properties');
+    
+    stylemenu=uimenu(cmenu, 'Label', 'Set linestyle');
+    uimenu(stylemenu, 'Label', 'Solid', 'Callback', 'HVLINECMENU(9,gco,gcf)');
+    uimenu(stylemenu, 'Label', 'Dotted', 'Callback', 'HVLINECMENU(10,gco,gcf)');
+    uimenu(stylemenu, 'Label', 'Dash-dot', 'Callback', 'HVLINECMENU(11,gco,gcf)');
+    uimenu(stylemenu, 'Label', 'Dashed', 'Callback', 'HVLINECMENU(12,gco,gcf)');
+    uimenu(stylemenu, 'Label', 'None', 'Callback', 'HVLINECMENU(41,gco,gcf)');
+    
+    linewidthmenu=uimenu(cmenu, 'Label', 'Set line width');
+    uimenu(linewidthmenu, 'Label', '0.1', 'Callback', 'HVLINECMENU(13,gco,gcf)');
+    uimenu(linewidthmenu, 'Label', '0.25', 'Callback', 'HVLINECMENU(14,gco,gcf)');
+    uimenu(linewidthmenu, 'Label', '0.5 (default)', 'Callback', 'HVLINECMENU(15,gco,gcf)');
+    uimenu(linewidthmenu, 'Label', '1.0', 'Callback', 'HVLINECMENU(16,gco,gcf)');
+    uimenu(linewidthmenu, 'Label', '2.5', 'Callback', 'HVLINECMENU(17,gco,gcf)');
+    uimenu(linewidthmenu, 'Label', '5.0', 'Callback', 'HVLINECMENU(18,gco,gcf)');
+    
+    % markermenu=uimenu(cmenu, 'Label', 'Set marker properties');
+    
+    markerstylemenu= uimenu(cmenu, 'Label', 'Set marker style');
+    uimenu(markerstylemenu, 'Label', 'None (default)', 'Callback', 'HVLINECMENU(24,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', '.', 'Callback', 'HVLINECMENU(25,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'o', 'Callback', 'HVLINECMENU(26,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'x', 'Callback', 'HVLINECMENU(27,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', '+', 'Callback', 'HVLINECMENU(28,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', '*', 'Callback', 'HVLINECMENU(29,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'Square', 'Callback', 'HVLINECMENU(30,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'Diamond', 'Callback', 'HVLINECMENU(31,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'Triangle down', 'Callback', 'HVLINECMENU(32,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'Triangle up', 'Callback', 'HVLINECMENU(33,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'Triangle left', 'Callback', 'HVLINECMENU(34,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'Triangle right', 'Callback', 'HVLINECMENU(35,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'Pentagram', 'Callback', 'HVLINECMENU(36,gco,gcf)');
+    uimenu(markerstylemenu, 'Label', 'Hexagram', 'Callback', 'HVLINECMENU(37,gco,gcf)');
+    
+    markersizemenu=uimenu(cmenu, 'Label', 'Set marker size');
+    uimenu(markersizemenu, 'Label', '3', 'Callback', 'HVLINECMENU(20,gco,gcf)');
+    uimenu(markersizemenu, 'Label', '6 (default)', 'Callback', 'HVLINECMENU(21,gco,gcf)');
+    uimenu(markersizemenu, 'Label', '9', 'Callback', 'HVLINECMENU(22,gco,gcf)');
+    uimenu(markersizemenu, 'Label', '12', 'Callback', 'HVLINECMENU(23,gco,gcf)');
+    
+    
+    
+    
+    
+    deletemenu=uimenu(cmenu, 'Label', 'Delete line');
+    uimenu(deletemenu, 'Label', 'Confirm delete', 'Callback', 'HVLINECMENU(19,gco,gcf)');
+    
+else % if the call is for a menu operation rather than to generate the menu:
+    
+    switch switchcode
+        % colours:
+        case 1
+            set(line_handle,'color',[0,0,0]);
+        case 2
+            set(line_handle,'color',[1,1,1]);
+        case 3
+            set(line_handle,'color',[1,0,0]);
+        case 4
+            set(line_handle,'color',[0,1,0]);
+        case 5
+            set(line_handle,'color',[0,0,1]);
+        case 6
+            set(line_handle,'color',[1,1,0]);
+        case 7
+            set(line_handle,'color',[0,1,1]);
+        case 8
+            set(line_handle,'color',[1,0,1]);
+            
+            % linestyles
+        case 9
+            set(line_handle,'linestyle','-');
+        case 10
+            set(line_handle,'linestyle',':');
+        case 11
+            set(line_handle,'linestyle','-.');
+        case 12
+            set(line_handle,'linestyle','--');     
+                    case 41
+            set(line_handle,'linestyle','none');
+            
+            
+            % line widths
+        case 13
+            set(line_handle,'linewidth',0.1);
+        case 14
+            set(line_handle,'linewidth',0.25);
+        case 15
+            set(line_handle,'linewidth',0.5);
+        case 16
+            set(line_handle,'linewidth',1);
+        case 17
+            set(line_handle,'linewidth',2.5);
+        case 18
+            set(line_handle,'linewidth',5);
+            
+            
+            % delete line        
+        case 19
+            delete(line_handle);
+            
+            
+            % marker sizes
+        case 20
+            set(line_handle,'markersize',3);
+        case 21
+            set(line_handle,'markersize',6);
+        case 22
+            set(line_handle,'markersize',9);
+        case 23
+            set(line_handle,'markersize',12);
+            
+            
+            % show styles
+        case 24
+            set(line_handle,'Marker','none');
+        case 25
+            set(line_handle,'Marker','.');
+        case 26
+            set(line_handle,'Marker','o');
+        case 27
+            set(line_handle,'Marker','x');
+        case 28
+            set(line_handle,'Marker','+');
+        case 29
+            set(line_handle,'Marker','*');
+        case 30
+            set(line_handle,'Marker','s');
+        case 31
+            set(line_handle,'Marker','d');
+        case 32
+            set(line_handle,'Marker','v');
+        case 33
+            set(line_handle,'Marker','^');
+        case 34
+            set(line_handle,'Marker','<');
+        case 35
+            set(line_handle,'Marker','>');
+        case 36
+            set(line_handle,'Marker','p');
+        case 36
+            set(line_handle,'Marker','h');
+            
+            
+            
+        case 37 % open 'line title' window
+            
+            % open the rescale window
+            labelpopuph=hgload('hvlinetitleGUI');
+            
+            % position it
+            set(labelpopuph,'units','pixels');
+            mpos=get(figure_handle,'position');
+            ppos=get(labelpopuph,'position');
+            newpos(1)=mpos(1)+mpos(3)./2-ppos(3)./2;
+            newpos(2)=mpos(2)+mpos(4)./2-ppos(4)./2;
+            set(labelpopuph,'position',[newpos,ppos(3:4)]);
+            
+            
+            % store the parent axis handle
+            userdata.linehandle=line_handle;
+            userdata.figurehandle=figure_handle;
+            set(labelpopuph,'UserData',userdata);
+            
+            
+            % get the current line title
+            lineuserdata=get(line_handle,'userdata');
+            linetitle=lineuserdata.title;
+            
+            % set the textbox values
+            handlist=allchild(labelpopuph);
+            set(findobj(handlist,'Tag','linetitle'),'string',linetitle);
+            
+            reapplylegend=0;
+            
+        case 41 % 'line title' window cancel
+            
+            % get the figure handle to prevent HVGRAPHSTYLE from complaining 
+            userdata=get(gcf,'UserData');
+            figure_handle=userdata.figurehandle;
+            reapplylegend=0;
+            
+            close(gcf);
+            
+            
+        case 42 % 'line title' window OK
+            
+            %get the stored figure and axis handles
+            labelpopuph=gcf;
+            userdata=get(labelpopuph,'UserData');
+            figure_handle=userdata.figurehandle;
+            line_handle=userdata.linehandle;
+            reapplylegend=0;
+            
+            % get the specified axis limits
+            handlist=allchild(labelpopuph);
+            
+            % get the textbox values
+            linetitle=get(findobj(handlist,'Tag','linetitle'),'string')
+            
+            
+            % set line label string properties
+            lineuserdata=get(line_handle,'userdata');
+            if length(linetitle>0)
+                lineuserdata.title=linetitle;
+            end
+            
+            set(line_handle,'userdata',lineuserdata);
+            
+            % update the line context menu
+            HVLINECMENU (0,line_handle,figure_handle,1);
+            
+            % close the popup window
+            close(labelpopuph);
+            
+            % relabel the graph
+            HVGRAPHAUTOLABEL (figure_handle);
+            
+            
+        case 38 % open 'axis label' window
+            
+            % open the rescale window
+            labelpopuph=hgload('hvlinelabelGUI');
+            
+            % position it
+            set(labelpopuph,'units','pixels');
+            mpos=get(figure_handle,'position');
+            ppos=get(labelpopuph,'position');
+            newpos(1)=mpos(1)+mpos(3)./2-ppos(3)./2;
+            newpos(2)=mpos(2)+mpos(4)./2-ppos(4)./2;
+            set(labelpopuph,'position',[newpos,ppos(3:4)]);
+            
+            
+            % store the parent axis handle
+            userdata.linehandle=line_handle;
+            userdata.figurehandle=figure_handle;
+            set(labelpopuph,'UserData',userdata);
+            
+            
+            % get the current line labels
+            lineuserdata=get(line_handle,'userdata');
+            xlabel=lineuserdata.xlabel;
+            ylabel=lineuserdata.ylabel1;
+            
+            % set the textbox values
+            handlist=allchild(labelpopuph);
+            set(findobj(handlist,'Tag','xlabel'),'string',xlabel);
+            set(findobj(handlist,'Tag','ylabel'),'string',ylabel);
+            
+            reapplylegend=0;
+            
+        case 39 % 'axis label' window cancel
+            
+            % get the figure handle to prevent HVGRAPHSTYLE from complaining 
+            userdata=get(gcf,'UserData');
+            figure_handle=userdata.figurehandle;
+            reapplylegend=0;
+            
+            close(gcf);
+            
+            
+        case 40 % 'axis label' window OK
+            
+            %get the stored figure and axis handles
+            labelpopuph=gcf;
+            userdata=get(labelpopuph,'UserData');
+            figure_handle=userdata.figurehandle;
+            line_handle=userdata.linehandle;
+            reapplylegend=0;
+            
+            % get the specified axis limits
+            handlist=allchild(labelpopuph);
+            
+            % get the textbox values
+            xlabel=get(findobj(handlist,'Tag','xlabel'),'string');
+            ylabel=get(findobj(handlist,'Tag','ylabel'),'string');
+            
+            % set line label string properties
+            lineuserdata=get(line_handle,'userdata');
+            if length(xlabel>0)
+                lineuserdata.xlabel=xlabel;
+            end
+            if length(ylabel)>0
+                lineuserdata.ylabel1=ylabel;
+            end
+            set(line_handle,'userdata',lineuserdata);
+            
+            % update the line context menu
+            HVLINECMENU (0,line_handle,figure_handle,1);
+            
+            % close the popup window
+            close(labelpopuph);
+            
+            % relabel the graph
+            HVGRAPHAUTOLABEL (figure_handle);
+
+            
+             % case 41 used for extra linestyle
+    end
+    
+end % if exist('defineflag');
+
+
+
+
+

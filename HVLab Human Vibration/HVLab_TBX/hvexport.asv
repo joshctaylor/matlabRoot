@@ -1,0 +1,202 @@
+%hvexport - issue 2.1 (13/04/10) - HVLab HRV Toolbox
+%---------------------------------------------------
+%[] = hvexport(filename, filetype, mydata)
+% Exports data from an HVLab data structure to data files in other formats
+%
+% filename = string containing pathname for the new data file
+% filetype = string describing format of data to be exported (see below
+%            for available values)
+% mydata   = name of HVLab data structure containing the data to be 
+%            exported
+%Available values for filetype:
+%------------------------------
+%   'dat'  = data files readable by FORTH HVLab functions. If the data 
+%            structure comprises more than one channel only the first 
+%            channel will be exported
+%   'csv'  = ASCII files with comma-separated values. All channels in the 
+%            data structure will be exported, in successive columns
+%Example:
+%--------
+%hvexport ('101.dat', 'dat', data(101)) 
+% exports single channel data from HVLab data structure, data(101), to a 
+% new HVLab file, 101.dat
+%
+%hvexport ('d:\excel\data\signals.csv', 'csv', signals) 
+% exports data from HVLab data structure, signals, to a new comma-separated 
+% ASCII file, d:\excel\data\signals.csv
+
+% written by Chris Lewis, June 2002
+% modified TPG 28/6/2002 to use a tab delimiter in place of a space to prevent preceeding spaces being treated as delimiters. 
+% modified CHL 05/8/2002 to use a comma delimiter and format columns in parallel
+% modified CHL 04/9/2002 to export HVLab files
+% modified CHL 02/02/2009 to bring HELP in line with technical manual
+% modified CHL 17/06/2009 to fix problem in HELP examples
+% modified CHL 13/04/2010 to force file extensions to .csv or .dat and enable export of complex data to .dat files
+%
+function [] = hvexport(strFilename, strFiletype, dasOut)
+
+if or(strcmpi(strFiletype, 'csv'), strcmpi(strFiletype, 'txt'))
+    error(HVFUNSTART('EXPORT TO ASCII DATA FILE', dasOut)); % show header and abort if input is not a valid structure
+    strFullname = HVFILEXT(strFilename, '.csv');
+    HVFUNPAR('file name', strFullname);
+    EXPORTascii(strFullname, dasOut);
+end  
+if strcmpi(strFiletype, 'dat')
+    error(HVFUNSTART('EXPORT TO HVLab DATA FILE', dasOut)); % show header and abort if input is not a valid structure
+    strFullname = HVFILEXT(strFilename, '.dat');
+    if ~HVISEMPTY(0, dasOut(1))
+        error(HVISVALID(dasOut(1), {'~xvar'})); % abort if input data is variable increment or not real
+        HVFUNPAR('file name', strFullname);
+        if length(dasOut) > 1; HVFUNPAR('WARNING: only the first channel will be exported'); end
+        EXPORThvlab(strFullname, dasOut(1)); 
+    else
+        error('First channel is empty');
+    end
+end
+return
+%==========================================
+%Export data to comma seperation ascii file
+function [] = EXPORTascii(strFilename, dasArray)
+
+%Open target file in 'write' mode
+filename = HVFILEXT(filename, '.csv');
+fid = fopen(strFilename, 'w');
+
+%Write main header
+nchnls = length(dasArray);
+fprintf(fid, 'Number of channels in data structure = %d\r\n', nchnls);
+HVFUNPAR('Number of channels in data structure', nchnls);
+
+maxrows = 0;
+for k = 1:nchnls
+    [nrows ncols] = size(dasArray(k).y);
+    if nrows > maxrows; maxrows = nrows; end;
+end    
+
+%Write channel headers
+%----------------------
+for k = 1:nchnls
+    switch dasArray(k).dtype
+        case {2, 3}
+            fprintf(fid, 'Channel %d: %s,,,', [k, dasArray(k).title]);
+        otherwise
+            fprintf(fid, 'Channel %d: %s,,', [k, dasArray(k).title]);
+    end
+end 
+fprintf(fid, '\r\n');
+
+for k = 1:nchnls
+    switch dasArray(k).dtype
+        case {2, 3}
+            fprintf(fid, 'Data type = %d,,,', dasArray(k).dtype);
+        otherwise
+            fprintf(fid, 'Data type = %d,,', dasArray(k).dtype);
+    end
+end 
+fprintf(fid, '\r\n');
+
+for k = 1:nchnls
+    switch dasArray(k).dtype
+        case 2
+            fprintf(fid, 'X axis,Real,Imaginary,');
+        case 3
+            fprintf(fid, 'X axis,Modulus,Phase,');
+        otherwise
+            fprintf(fid, 'X axis,Y axis,');
+    end
+end 
+fprintf(fid, '\r\n');
+
+for k = 1:nchnls
+    switch dasArray(k).dtype
+        case 2
+            fprintf(fid, '%s, %s, %s,', dasArray(k).xunit, dasArray(k).yunit, dasArray(k).yunit);
+        case 3
+            fprintf(fid, '%s, %s, %s,', dasArray(k).xunit, dasArray(k).yunit, dasArray(k).y2unit);
+        otherwise
+            fprintf(fid, '%s, %s,', dasArray(k).xunit, dasArray(k).yunit);
+    end
+end 
+fprintf(fid, '\r\n');
+
+%Write channel data row by row
+%-----------------------------
+for r = 1:nrows
+    for k = 1:nchnls
+       [nrows ncols] = size(dasArray(k).y);
+       if r > nrows 
+           switch dasArray(k).dtype
+                case {2, 3}
+                    fprintf(fid, ',,,');     
+                otherwise
+                    fprintf(fid, ',,');   
+            end
+        else
+            switch dasArray(k).dtype
+                case 2
+                    fprintf(fid, '%8.5f,%12.5g,%12.5g,', [dasArray(k).x(r) real(dasArray(k).y(r)) imag(dasArray(k).y(r))]);     
+                case 3
+                    fprintf(fid, '%8.5f,%12.5g,%12.5g,', [dasArray(k).x(r) dasArray(k).y(r,:)]);      
+                otherwise
+                    fprintf(fid, '%8.5f,%12.5g,', [dasArray(k).x(r) dasArray(k).y(r)]);   
+            end
+        end
+    end
+    fprintf(fid, '\r\n');    
+end 
+% Close file
+fclose(fid);
+return
+
+% =============================================
+% export single data channel to HVLab data file
+function [] = EXPORThvlab(strFilename, dasArray)
+
+nsamps = length(dasArray.y);
+origin = dasArray.x(1);
+increment = dasArray.x(2) - dasArray.x(1);
+srate = dasArray.stats(1);
+HVFUNPAR('Number of data samples', nsamps);
+
+%following code taken from 'hvwrite', written 22 September 1998 TPG
+%create file with write permission
+filename = HVFILEXT(strFilename, '.dat');
+fid=fopen(filename, 'w');
+
+%write header values
+%first block
+fwrite(fid,[nsamps,srate,origin,increment],'float');
+padding=[1:28].*0;
+fwrite(fid,padding,'float');
+
+%second block - set mode to appropriate value and all other values to 0
+block2=[1:384].*0;
+switch dasArray.dtype
+    case 1
+         block2(1) = 1;
+         HVFUNPAR('Data type = real');
+    case 2
+         block2(1) = 2;
+         HVFUNPAR('Data type = complex');
+    case 3
+         block2(1) = 4;
+         HVFUNPAR('Data type = modulus and phase');
+end
+fwrite(fid,block2,'int8');
+
+%write data
+[nrows ncols] = size(dasArray.y);
+switch dasArray.dtype
+    case 1
+        fwrite(fid,dasArray.y,'float');
+    case 2
+        cmplxarray = [imag(dasArray.y) real(dasArray.y)];
+        fwrite(fid, cmplxarray', 'float');
+    case 3
+        mopharray = [dasArray.y(:,2) dasArray.y(:,1)];
+        fwrite(fid, mopharray', 'float');
+end
+%close file
+fclose(fid);
+
+return
